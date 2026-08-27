@@ -10,6 +10,7 @@ import { generateStyles } from './styles.js';
 import { getTheme, mergeTheme, solar, themeToCSSVars, resolveAutoTheme } from './themes.js';
 import { Toolbar } from './toolbar.js';
 import { LinkTooltip } from './link-tooltip.js';
+import { IRRenderer } from './ir.js';
 import { defaultToolbarButtons, toolbarButtons as builtinToolbarButtons } from './toolbar-buttons.js';
 
 let _isSafariCache;
@@ -708,7 +709,7 @@ class OverType {
     _checkForRemovedUploads() {
       if (!this._uploadedFiles || this._uploadedFiles.size === 0) return;
       const cb = this.options.fileUpload?.onRemoveFile;
-      const value = this.textarea.value;
+      const value = this.getValue();
       const removed = [];
       for (const [url, info] of this._uploadedFiles) {
         if (!value.includes(url)) removed.push({ url, info });
@@ -815,6 +816,12 @@ class OverType {
      * Update preview with parsed markdown
      */
     updatePreview() {
+      // IR mode has its own render pipeline
+      if (this.container && this.container.dataset.mode === 'ir' && this.ir) {
+        this.ir.render();
+        return;
+      }
+
       const text = this.textarea.value;
       const cursorPos = this.textarea.selectionStart;
       const activeLine = this._getCurrentLine(text, cursorPos);
@@ -855,7 +862,7 @@ class OverType {
       if (!this.initialized) return;
       this._checkForRemovedUploads();
       if (this.options.onChange) {
-        this.options.onChange(this.textarea.value, this);
+        this.options.onChange(this.getValue(), this);
       }
     }
 
@@ -906,6 +913,11 @@ class OverType {
      * @private
      */
     handleInput(event) {
+      if (this.container && this.container.dataset.mode === 'ir' && this.ir) {
+        this.ir.handleInput(event);
+        this._notifyChange();
+        return;
+      }
       this.updatePreview();
       this._notifyChange();
       this._scheduleSafariReflow();
@@ -957,6 +969,11 @@ class OverType {
      * @private
      */
     handleKeydown(event) {
+      // IR mode block-level keys (Enter / Backspace / arrows) come first
+      if (this.container && this.container.dataset.mode === 'ir' && this.ir) {
+        if (this.ir.handleKeydown(event)) return;
+      }
+
       // Let collapsed Tab/Shift+Tab use native focus traversal.
       if (event.key === 'Tab') {
         const start = this.textarea.selectionStart;
@@ -1126,6 +1143,8 @@ class OverType {
      * @private
      */
     handleScroll(event) {
+      // IR mode: the textarea is block-scoped, nothing to sync
+      if (this.container && this.container.dataset.mode === 'ir') return;
       // Sync preview scroll with textarea
       this.preview.scrollTop = this.textarea.scrollTop;
       this.preview.scrollLeft = this.textarea.scrollLeft;
@@ -1136,6 +1155,9 @@ class OverType {
      * @returns {string} Current markdown content
      */
     getValue() {
+      if (this.container && this.container.dataset.mode === 'ir' && this.ir) {
+        return this.ir.getValue();
+      }
       return this.textarea.value;
     }
 
@@ -1144,6 +1166,17 @@ class OverType {
      * @param {string} value - Markdown content to set
      */
     setValue(value) {
+      if (this.container && this.container.dataset.mode === 'ir' && this.ir) {
+        const didChange = this.getValue() !== value;
+        this.ir.setValue(value);
+        if (this.options.autoResize) {
+          this._updateAutoHeight();
+        }
+        if (didChange) {
+          this._notifyChange();
+        }
+        return;
+      }
       const didChange = this.textarea.value !== value;
       this.textarea.value = value;
       this.updatePreview();
@@ -1225,6 +1258,10 @@ class OverType {
      * @returns {string} Current preview HTML (as displayed)
      */
     getPreviewHTML() {
+      // IR mode: the wrapper-level preview layer is hidden; render from source
+      if (this.container && this.container.dataset.mode === 'ir' && this.ir) {
+        return MarkdownParser.parse(this.getValue(), -1, false, this.options.codeHighlighter, true);
+      }
       return this.preview.innerHTML;
     }
 
@@ -1435,14 +1472,21 @@ class OverType {
      */
     _updateStats() {
       if (!this.statsBar) return;
-      
-      const value = this.textarea.value;
+
+      const isIR = this.container && this.container.dataset.mode === 'ir' && this.ir;
+      const value = this.getValue();
       const lines = value.split('\n');
       const chars = value.length;
       const words = value.split(/\s+/).filter(w => w.length > 0).length;
-      
-      // Calculate line and column
-      const selectionStart = this.textarea.selectionStart;
+
+      // Calculate line and column (IR: textarea offset is block-scoped)
+      let selectionStart;
+      if (isIR) {
+        const b = this.ir.blocks[this.ir.activeIndex];
+        selectionStart = (b ? b.start : 0) + this.textarea.selectionStart;
+      } else {
+        selectionStart = this.textarea.selectionStart;
+      }
       const beforeCursor = value.substring(0, selectionStart);
       const linesBeforeCursor = beforeCursor.split('\n');
       const currentLine = linesBeforeCursor.length;
@@ -1501,6 +1545,17 @@ class OverType {
       const preview = this.preview;
       const wrapper = this.wrapper;
       const isPreviewMode = this.container.dataset.mode === 'preview';
+      const isIRMode = this.container.dataset.mode === 'ir';
+
+      if (isIRMode) {
+        // IR mode: content flows naturally inside the block container
+        wrapper.style.removeProperty('height');
+        preview.style.removeProperty('height');
+        preview.style.removeProperty('overflow-y');
+        textarea.style.removeProperty('height');
+        textarea.style.removeProperty('overflow-y');
+        return;
+      }
 
       if (isPreviewMode) {
         // In preview mode, CSS makes the preview position:static so it flows naturally.
@@ -1587,6 +1642,10 @@ class OverType {
      * @returns {this} Returns this for chaining
      */
     showNormalEditMode() {
+      // Leaving IR mode: restore textarea/preview structure first
+      if (this.container.dataset.mode === 'ir' && this.ir) {
+        this.ir.deactivate();
+      }
       this.container.dataset.mode = 'normal';
       this._syncPreviewInteractivity();
       this.updatePreview(); // Re-render with normal mode (e.g., show syntax markers)
@@ -1606,6 +1665,9 @@ class OverType {
      * @returns {this} Returns this for chaining
      */
     showPlainTextarea() {
+      if (this.container.dataset.mode === 'ir' && this.ir) {
+        this.ir.deactivate();
+      }
       this.container.dataset.mode = 'plain';
       this._syncPreviewInteractivity();
       this._updateAutoHeight();
@@ -1627,9 +1689,30 @@ class OverType {
      * @returns {this} Returns this for chaining
      */
     showPreviewMode() {
+      if (this.container.dataset.mode === 'ir' && this.ir) {
+        this.ir.deactivate();
+      }
       this.container.dataset.mode = 'preview';
       this._syncPreviewInteractivity();
       this.updatePreview(); // Re-render with preview mode (e.g., checkboxes)
+      this._updateAutoHeight();
+      return this;
+    }
+
+    /**
+     * Show instant-render mode (block-level WYSIWYG):
+     * the caret block shows raw markdown, all other blocks render live.
+     * @returns {this} Returns this for chaining
+     */
+    showInstantRenderMode() {
+      if (!this.ir) {
+        this.ir = new IRRenderer(this);
+      }
+      if (this.container.dataset.mode !== 'ir') {
+        this.ir.activate();
+      }
+      this.container.dataset.mode = 'ir';
+      this._syncPreviewInteractivity();
       this._updateAutoHeight();
       return this;
     }
@@ -1662,6 +1745,10 @@ class OverType {
 
       // Remove DOM if created by us
       if (this.wrapper) {
+        if (this.ir) {
+          // Restore textarea/preview structure before tearing down the wrapper
+          this.ir.deactivate();
+        }
         const content = this.getValue();
         this.wrapper.remove();
 
@@ -1669,6 +1756,7 @@ class OverType {
         this.element.textContent = content;
       }
 
+      this.ir = null;
       this.initialized = false;
     }
 

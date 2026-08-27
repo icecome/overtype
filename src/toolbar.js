@@ -382,8 +382,7 @@ export class Toolbar {
 
     const items = [
       { id: 'normal', label: 'Normal Edit', icon: '✓' },
-      { id: 'plain', label: 'Plain Textarea', icon: '✓' },
-      { id: 'preview', label: 'Preview Mode', icon: '✓' }
+      { id: 'ir', label: 'Instant Render', icon: '✓' }
     ];
 
     const currentMode = this.editor.container.dataset.mode || 'normal';
@@ -411,11 +410,8 @@ export class Toolbar {
 
         // Handle view mode changes
         switch(item.id) {
-          case 'plain':
-            this.editor.showPlainTextarea();
-            break;
-          case 'preview':
-            this.editor.showPreviewMode();
+          case 'ir':
+            this.editor.showInstantRenderMode();
             break;
           case 'normal':
           default:

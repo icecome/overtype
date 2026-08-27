@@ -208,15 +208,15 @@ console.log('━'.repeat(50));
     'Expected expanded menu controlled by the view mode button'
   );
   assert(
-    menuItems.length === 3 &&
+    menuItems.length === 2 &&
       menuItems[0].getAttribute('aria-checked') === 'true' &&
       menuItems.every(item => item.tabIndex === -1),
     'View mode menu items use managed radio focus',
     'Expected checked radio menu items outside the page tab order'
   );
-  assert(document.activeElement === menuItems[2], 'ArrowUp opens menu on last item', 'Expected last menu item to receive focus');
+  assert(document.activeElement === menuItems[1], 'ArrowUp opens menu on last item', 'Expected last menu item to receive focus');
 
-  dispatchKeydown(menuItems[2], 'ArrowDown');
+  dispatchKeydown(menuItems[1], 'ArrowDown');
   assert(document.activeElement === menuItems[0], 'Menu ArrowDown wraps to first item', 'Expected first item to receive focus');
 
   dispatchKeydown(menuItems[0], 'Escape');

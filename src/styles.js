@@ -869,6 +869,214 @@ export function generateStyles(options = {}) {
       height: 2px !important;
     }
 
+    /* ===== Instant-render (IR) mode ===== */
+    /* Hide the wrapper-level preview layer; blocks own the rendering */
+    .overtype-container[data-mode="ir"] .overtype-wrapper > .overtype-preview {
+      display: none !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-wrapper > .overtype-placeholder {
+      pointer-events: none !important;
+    }
+
+    /* Block container: fills the wrapper and scrolls */
+    .overtype-container[data-mode="ir"] .overtype-ir-container {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      box-sizing: border-box !important;
+      padding: var(--instance-padding, ${padding}) !important;
+    }
+
+    .overtype-container.overtype-auto-resize[data-mode="ir"] .overtype-ir-container {
+      position: static !important;
+      height: auto !important;
+    }
+
+    /* Block base */
+    .overtype-container[data-mode="ir"] .overtype-ir-block {
+      position: relative !important;
+      min-height: 1.5em !important;
+      padding: 1px 4px !important;
+      margin: 2px 0 !important;
+      border-radius: 4px !important;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      cursor: text !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active):hover {
+      background: var(--hover-bg, rgba(128, 128, 128, 0.08)) !important;
+    }
+
+    /* Active block: block-scoped overlay alignment
+       (preview stays in flow to set the height, textarea covers it) */
+    .overtype-container[data-mode="ir"] .overtype-ir-block.active .overtype-ir-block-preview {
+      position: static !important;
+      width: 100% !important;
+      height: auto !important;
+      min-height: 1.5em !important;
+      padding: 0 !important;
+      overflow: visible !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block.active .overtype-input {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+
+    /* Inactive blocks: rich-text rendering (mirrors preview mode typography),
+       colors reuse the default edit-mode identifiers (theme-aware) */
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) {
+      font-family: Georgia, 'Times New Roman', serif !important;
+      font-size: 16px !important;
+      line-height: 1.8 !important;
+      color: var(--text, #0d3b66) !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) .syntax-marker,
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) .syntax-marker.url-part,
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) a .syntax-marker,
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) .code-fence,
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) .code-block-line {
+      display: none !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) h1,
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) h2,
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) h3 {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+      font-weight: 600 !important;
+      margin: 0.4em 0 0.2em 0 !important;
+      display: block !important;
+      line-height: 1.3 !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) h1 {
+      font-size: 1.8em !important;
+      color: var(--h1, #f95738) !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) h2 {
+      font-size: 1.4em !important;
+      color: var(--h2, #ee964b) !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) h3 {
+      font-size: 1.17em !important;
+      color: var(--h3, #3d8a51) !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) ul {
+      display: block !important;
+      list-style: disc !important;
+      padding-left: 2em !important;
+      margin: 0.4em 0 !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) ol {
+      display: block !important;
+      list-style: decimal !important;
+      padding-left: 2em !important;
+      margin: 0.4em 0 !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) li {
+      display: list-item !important;
+      margin: 0.15em 0 !important;
+      padding: 0 !important;
+    }
+
+    /* List bullet/number reuses default edit-mode list marker color */
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) li::marker {
+      color: var(--list-marker, #ee964b);
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) li.task-list {
+      list-style: none !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) li.task-list input[type="checkbox"] {
+      margin-right: 0.5em !important;
+      vertical-align: middle !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) .blockquote {
+      display: block !important;
+      border-left: 4px solid var(--blockquote, #5a7a9b) !important;
+      color: var(--blockquote, #5a7a9b) !important;
+      padding-left: 1em !important;
+      margin: 0.4em 0 !important;
+      font-style: italic !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) strong {
+      font-weight: 700 !important;
+      color: var(--strong, #ee964b) !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) em {
+      font-style: italic !important;
+      color: var(--em, #f95738) !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) del {
+      text-decoration: line-through !important;
+      color: var(--del, #ee964b) !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) a {
+      pointer-events: auto !important;
+      cursor: pointer !important;
+      color: var(--link, #0d3b66) !important;
+      text-decoration: underline !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) code {
+      font-family: ${fontFamily} !important;
+      font-size: 0.9em !important;
+      background: var(--code-bg, rgba(244, 211, 94, 0.4)) !important;
+      color: var(--code, #0d3b66) !important;
+      padding: 0.2em 0.4em !important;
+      border-radius: 3px !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) pre.code-block {
+      background: var(--code-bg, rgba(244, 211, 94, 0.4)) !important;
+      color: var(--code, #0d3b66) !important;
+      padding: 1.2em !important;
+      border-radius: 3px !important;
+      overflow-x: auto !important;
+      margin: 0.4em 0 !important;
+      display: block !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) pre.code-block code {
+      background: transparent !important;
+      color: inherit !important;
+      padding: 0 !important;
+      font-family: ${fontFamily} !important;
+      font-size: 0.9em !important;
+      line-height: 1.4 !important;
+    }
+
+    .overtype-container[data-mode="ir"] .overtype-ir-block:not(.active) .hr-marker {
+      display: block !important;
+      border-top: 2px solid var(--hr, #5a7a9b) !important;
+      text-indent: -9999px !important;
+      height: 2px !important;
+      margin: 0.6em 0 !important;
+    }
+
     /* Link Tooltip */
     .overtype-link-tooltip {
       background: #333 !important;
