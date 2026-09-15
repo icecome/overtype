@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [overtypeplus, main]
+  pull_request:
+    branches: [overtypeplus, main]
+
+jobs:
+  core:
+    name: Core (test + typecheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test --workspace=overtypeplus
+
+  editor:
+    name: Editor (typecheck + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run typecheck --workspace=overtypeplus-editor
+      - run: npm run build --workspace=overtypeplus-editor
