@@ -29,9 +29,6 @@ temp/
 # OS files
 Thumbs.db
 
-# Editor build output
-packages/editor/dist/
-
 # Playwright MCP
 .playwright-mcp/
 
@@ -44,6 +41,5 @@ CLAUDE.md
 # Local working files (issue dumps, brainstorms, planning docs)
 DONT_COMMIT/
 
-docs/
 .workbuddy/
 .history/
